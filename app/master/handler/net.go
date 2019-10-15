@@ -8,11 +8,11 @@ import (
 	"log"
 	"net"
 
-	"github.com/Goss-io/Goss/lib"
-	"github.com/Goss-io/Goss/lib/ini"
-	"github.com/Goss-io/Goss/lib/logd"
-	"github.com/Goss-io/Goss/lib/packet"
-	"github.com/Goss-io/Goss/lib/protocol"
+	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/ini"
+	"github.com/Goss-io/goss/lib/logd"
+	"github.com/Goss-io/goss/lib/packet"
+	"github.com/Goss-io/goss/lib/protocol"
 )
 
 type NodeParams struct {

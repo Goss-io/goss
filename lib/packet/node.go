@@ -8,7 +8,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/Goss-io/Goss/lib/protocol"
+	"github.com/Goss-io/goss/lib/protocol"
 )
 
 type NodeTypes string

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/Goss-io/Goss/lib/ini"
+	"github.com/Goss-io/goss/lib/ini"
 )
 
 type AdminService struct {

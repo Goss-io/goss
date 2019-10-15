@@ -6,12 +6,12 @@ import (
 	"net"
 	"time"
 
-	"github.com/Goss-io/Goss/lib"
-	"github.com/Goss-io/Goss/lib/hardware"
-	"github.com/Goss-io/Goss/lib/ini"
-	"github.com/Goss-io/Goss/lib/logd"
-	"github.com/Goss-io/Goss/lib/packet"
-	"github.com/Goss-io/Goss/lib/protocol"
+	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/hardware"
+	"github.com/Goss-io/goss/lib/ini"
+	"github.com/Goss-io/goss/lib/logd"
+	"github.com/Goss-io/goss/lib/packet"
+	"github.com/Goss-io/goss/lib/protocol"
 )
 
 //connMaster 连接管理节点.

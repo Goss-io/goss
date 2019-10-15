@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Goss-io/Goss/lib"
-	"github.com/Goss-io/Goss/lib/ini"
+	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/ini"
 )
 
 //Level .

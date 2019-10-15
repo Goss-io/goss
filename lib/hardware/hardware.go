@@ -3,7 +3,7 @@ package hardware
 import (
 	"runtime"
 
-	"github.com/Goss-io/Goss/lib/hardware/linux"
+	"github.com/Goss-io/goss/lib/hardware/linux"
 )
 
 type cpu struct {

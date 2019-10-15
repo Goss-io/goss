@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"github.com/Goss-io/Goss/lib"
-	"github.com/Goss-io/Goss/lib/packet"
-	"github.com/Goss-io/Goss/lib/protocol"
+	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/packet"
+	"github.com/Goss-io/goss/lib/protocol"
 )
 
 //GossNode 节点信息.

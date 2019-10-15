@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/Goss-io/Goss/lib/protocol"
+	"github.com/Goss-io/goss/lib/protocol"
 )
 
 const PROROCOL_LEN = 4

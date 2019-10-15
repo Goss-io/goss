@@ -8,15 +8,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Goss-io/Goss/lib/ini"
+	"github.com/Goss-io/goss/lib/ini"
 
-	"github.com/Goss-io/Goss/db"
-	"github.com/Goss-io/Goss/lib/filetype"
-	"github.com/Goss-io/Goss/lib/protocol"
+	"github.com/Goss-io/goss/db"
+	"github.com/Goss-io/goss/lib/filetype"
+	"github.com/Goss-io/goss/lib/protocol"
 
-	"github.com/Goss-io/Goss/app/api/conf"
-	"github.com/Goss-io/Goss/lib"
-	"github.com/Goss-io/Goss/lib/packet"
+	"github.com/Goss-io/goss/app/api/conf"
+	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/packet"
 )
 
 //ApiService.

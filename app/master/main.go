@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"github.com/Goss-io/Goss/app/master/conf"
-	"github.com/Goss-io/Goss/app/master/handler"
-	"github.com/Goss-io/Goss/lib/cmd"
+	"github.com/Goss-io/goss/app/master/conf"
+	"github.com/Goss-io/goss/app/master/handler"
+	"github.com/Goss-io/goss/lib/cmd"
 )
 
 func main() {

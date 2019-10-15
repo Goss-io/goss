@@ -6,7 +6,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/Goss-io/Goss/lib/ini"
+	"github.com/Goss-io/goss/lib/ini"
 )
 
 //Db .

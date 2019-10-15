@@ -1,6 +1,6 @@
 package linux
 
-import "github.com/Goss-io/Goss/lib/command"
+import "github.com/Goss-io/goss/lib/command"
 
 //CpuNum Cpu核数.
 func CpuNum() string {

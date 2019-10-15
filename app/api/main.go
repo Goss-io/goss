@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/Goss-io/Goss/app/api/conf"
-	"github.com/Goss-io/Goss/app/api/handler"
-	"github.com/Goss-io/Goss/db"
-	"github.com/Goss-io/Goss/lib/cmd"
+	"github.com/Goss-io/goss/app/api/conf"
+	"github.com/Goss-io/goss/app/api/handler"
+	"github.com/Goss-io/goss/db"
+	"github.com/Goss-io/goss/lib/cmd"
 )
 
 func main() {

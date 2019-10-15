@@ -3,8 +3,8 @@ package linux
 import (
 	"fmt"
 
-	"github.com/Goss-io/Goss/lib"
-	"github.com/Goss-io/Goss/lib/command"
+	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/command"
 )
 
 //MemSize 内存大小.
