@@ -1,0 +1,9 @@
+#节点配置
+node_name=master_node
+node_ip = 127.0.0.1
+node_port = 8000
+node_web_port=8080
+
+#基础配置
+log_path = ../log/
+token = 202cb962ac59075b964b07152d234b70

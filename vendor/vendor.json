@@ -1,0 +1,19 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "IqQmIPZbwgzbZD4k7YX6Rj230pY=",
+			"path": "github.com/jinzhu/gorm",
+			"revision": "2a1463811ee1dc85d168fd639a2d4251d030e6e5",
+			"revisionTime": "2017-07-03T13:49:54Z"
+		},
+		{
+			"checksumSHA1": "eECxSkwh0WmhLwaxHfkvcLOWS08=",
+			"path": "github.com/jinzhu/gorm/dialects/mysql",
+			"revision": "2a1463811ee1dc85d168fd639a2d4251d030e6e5",
+			"revisionTime": "2017-07-03T13:49:54Z"
+		}
+	],
+	"rootPath": "goss.io/goss"
+}

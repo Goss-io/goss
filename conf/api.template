@@ -1,0 +1,16 @@
+#数据库配置
+db_host = 127.0.0.1
+db_user = postgres
+db_name = goss
+db_pwd = 123
+db_port = 5432
+
+#节点配置
+node_name=api_node_1
+node_ip = 127.0.0.1
+node_port = 80
+
+#基础配置
+log_path = ../log/
+master_node=127.0.0.1:8000
+token = 202cb962ac59075b964b07152d234b70
