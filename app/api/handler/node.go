@@ -17,13 +17,13 @@ import (
 )
 
 //connMaster .
-func (this *ApiService) connMaster() {
-	conn := this.conn(this.MasterNode)
+func (a *ApiService) connMaster() {
+	conn := a.conn(a.MasterNode)
 	//连接初始化
-	if err := this.connInit(conn); err != nil {
+	if err := a.connInit(conn); err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
 		time.Sleep(time.Second * 1)
-		this.connMaster()
+		a.connMaster()
 		return
 	}
 
@@ -31,7 +31,7 @@ func (this *ApiService) connMaster() {
 		pkt, err := packet.Parse(conn)
 		if err != nil && err == io.EOF {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), "master节点断开连接，稍后重新连接master节点")
-			this.connMaster()
+			a.connMaster()
 			return
 		}
 		log.Printf("pkt:%+v\n", pkt)
@@ -43,7 +43,7 @@ func (this *ApiService) connMaster() {
 			log.Println("ip:", ip)
 			//新增节点.
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "新增存储节点:"+ip)
-			this.Tcp.Start(ip)
+			a.Tcp.Start(ip)
 		}
 
 		if pkt.Protocol == protocol.REMOVE_NODE {
@@ -51,7 +51,7 @@ func (this *ApiService) connMaster() {
 			log.Println("ip:", ip)
 			//删除节点.
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到master节点要求与:"+ip+"节点断开的消息")
-			if err := this.Tcp.conn[ip].Close(); err != nil {
+			if err := a.Tcp.conn[ip].Close(); err != nil {
 				logd.Make(logd.Level_INFO, logd.GetLogpath(), "断开与:"+ip+"节点的连接失败")
 				return
 			}
@@ -61,33 +61,33 @@ func (this *ApiService) connMaster() {
 }
 
 //conn .
-func (this *ApiService) conn(node string) net.Conn {
+func (a *ApiService) conn(node string) net.Conn {
 	conn, err := net.Dial("tcp4", node)
 	if err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), "master节点连接失败，稍后重新连接")
 		time.Sleep(time.Second * 1)
-		return this.conn(node)
+		return a.conn(node)
 	}
 
 	return conn
 }
 
 //connInit 连接初始化.
-func (this *ApiService) connInit(conn net.Conn) error {
+func (a *ApiService) connInit(conn net.Conn) error {
 	//向主节点发送授权信息.
-	if err := this.sendAuth(conn); err != nil {
+	if err := a.sendAuth(conn); err != nil {
 		return err
 	}
 
 	//发送节点信息.
-	if err := this.sendNodeInfo(conn); err != nil {
+	if err := a.sendNodeInfo(conn); err != nil {
 		return err
 	}
 	return nil
 }
 
 //auth 发送授权信息.
-func (this *ApiService) sendAuth(conn net.Conn) error {
+func (a *ApiService) sendAuth(conn net.Conn) error {
 	tokenBuf := []byte(ini.GetString("token"))
 	buf := packet.New(tokenBuf, tokenBuf, protocol.CONN_AUTH)
 	_, err := conn.Write(buf)
@@ -109,13 +109,13 @@ func (this *ApiService) sendAuth(conn net.Conn) error {
 }
 
 //sendNodeInfo 上报节点信息.
-func (this *ApiService) sendNodeInfo(conn net.Conn) error {
+func (a *ApiService) sendNodeInfo(conn net.Conn) error {
 	h := hardware.New()
 	nodeInfo := protocol.NodeInfo{
 		Types:    string(packet.NodeTypes_Api),
 		CpuNum:   h.Cpu.Num,
 		MemSize:  h.Mem.Total,
-		SourceIP: this.Addr,
+		SourceIP: a.Addr,
 		Name:     ini.GetString("node_name"),
 	}
 

@@ -44,19 +44,19 @@ func GetApiList() []Node {
 }
 
 //RemoveNode 移除某一个切片.
-func RemoveNode(this *MasterService, ip string) {
+func RemoveNode(n *MasterService, ip string) {
 	//根据访问ip获取节点ip.
 	for index, v := range GossNode {
 		if v.IP == ip {
 			//通知对应的节点与故障节点断开连接.
 			pkt := packet.New([]byte(v.SourceIP), lib.Hash(v.SourceIP), protocol.REMOVE_NODE)
-			this.Conn[v.SourceIP].Write(pkt)
+			n.Conn[v.SourceIP].Write(pkt)
 
 			//从NodeInfo中移除当前.
 			GossNode = append(GossNode[:index], GossNode[index+1:]...)
 
 			//删除对应的连接数据.
-			delete(this.Conn, v.SourceIP)
+			delete(n.Conn, v.SourceIP)
 		}
 	}
 }

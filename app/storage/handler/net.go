@@ -38,14 +38,14 @@ func NewStorageService() *StorageService {
 }
 
 //Start .
-func (this *StorageService) Start() {
-	this.checkStoragePath()
-	go this.connMaster()
-	this.listen()
+func (s *StorageService) Start() {
+	s.checkStoragePath()
+	go s.connMaster()
+	s.listen()
 }
 
 //checkStoragePath 检查存储路径.
-func (this *StorageService) checkStoragePath() {
+func (s *StorageService) checkStoragePath() {
 	if !lib.IsExists(conf.Conf.Node.StorageRoot) {
 		//创建存储文件夹.
 		if err := os.Mkdir(conf.Conf.Node.StorageRoot, 0777); err != nil {
@@ -55,8 +55,8 @@ func (this *StorageService) checkStoragePath() {
 }
 
 //listen .
-func (this *StorageService) listen() {
-	listener, err := net.Listen("tcp4", this.Port)
+func (s *StorageService) listen() {
+	listener, err := net.Listen("tcp4", s.Port)
 	if err != nil {
 		log.Printf("端口监听失败!%+v\n", err)
 		return
@@ -70,17 +70,17 @@ func (this *StorageService) listen() {
 		}
 
 		ip := conn.RemoteAddr().String()
-		if err := this.checkAuth(conn, ip); err != nil {
+		if err := s.checkAuth(conn, ip); err != nil {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
 			return
 		}
 		log.Println("api节点：" + ip + "连接")
-		go this.handler(conn, ip)
+		go s.handler(conn, ip)
 	}
 }
 
 //checkAuth .
-func (this *StorageService) checkAuth(conn net.Conn, ip string) error {
+func (s *StorageService) checkAuth(conn net.Conn, ip string) error {
 	pkt, err := packet.Parse(conn)
 	if err != nil {
 		return err
@@ -101,15 +101,15 @@ func (this *StorageService) checkAuth(conn net.Conn, ip string) error {
 	if err != nil {
 		return err
 	}
-	this.Auth[ip] = true
+	s.Auth[ip] = true
 	return nil
 }
 
-func (this *StorageService) handler(conn net.Conn, ip string) {
+func (s *StorageService) handler(conn net.Conn, ip string) {
 	defer conn.Close()
 	for {
 		//判断是否已经授权.
-		if !this.Auth[ip] {
+		if !s.Auth[ip] {
 			buf := packet.New([]byte("未授权"), lib.Hash("未授权"), protocol.MSG)
 			conn.Write(buf)
 			return
@@ -127,7 +127,8 @@ func (this *StorageService) handler(conn net.Conn, ip string) {
 			//验证文件是否损坏.
 			if fHash != pkt.Hash {
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "文件hash不一致")
-				conn.Write([]byte("fail"))
+				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
+				conn.Write(buf)
 				return
 			}
 
@@ -135,9 +136,12 @@ func (this *StorageService) handler(conn net.Conn, ip string) {
 			err = ioutil.WriteFile(fPath, pkt.Body, 0777)
 			if err != nil {
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "创建文件失败"+err.Error())
+				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
+				conn.Write(buf)
 				return
 			}
-			conn.Write([]byte(fHash))
+			buf := packet.New([]byte(fHash), lib.Hash(fHash), protocol.MSG)
+			conn.Write(buf)
 		}
 
 		if pkt.Protocol == protocol.READ_FILE {
@@ -146,12 +150,16 @@ func (this *StorageService) handler(conn net.Conn, ip string) {
 			b, err := ioutil.ReadFile(fpath)
 			if err != nil {
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "读取文件失败:"+err.Error())
+				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
+				conn.Write(buf)
 				return
 			}
 
 			//验证文件是否损坏.
 			if lib.FileHash(b) != pkt.Hash {
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), pkt.Hash+"文件已损坏")
+				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
+				conn.Write(buf)
 				return
 			}
 
@@ -159,6 +167,8 @@ func (this *StorageService) handler(conn net.Conn, ip string) {
 			_, err = conn.Write(buf)
 			if err != nil && err == io.EOF {
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "文件发送失败:"+err.Error())
+				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
+				conn.Write(buf)
 				return
 			}
 

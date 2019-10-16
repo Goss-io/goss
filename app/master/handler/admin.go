@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Goss-io/goss/lib/ini"
+	"github.com/gin-gonic/gin"
 )
 
 type AdminService struct {
@@ -21,21 +21,21 @@ func NewAdmin() {
 }
 
 //Start .
-func (this *AdminService) Start() {
+func (a *AdminService) Start() {
 	r := gin.Default()
 	r.Static("/img", "./admin/static/img/")
 	r.Static("/css", "./admin/static/css/")
 	r.Static("/vendor", "./admin/static/vendor/")
 	r.LoadHTMLGlob("./admin/views/*")
 
-	r.GET("/console", this.handleConsole)
-	if err := r.Run(this.WebPort); err != nil {
+	r.GET("/console", a.handleConsole)
+	if err := r.Run(a.WebPort); err != nil {
 		log.Panicln(err)
 	}
 }
 
 //handleConsole .
-func (this *AdminService) handleConsole(c *gin.Context) {
+func (a *AdminService) handleConsole(c *gin.Context) {
 
 	//获取所有的api节点.
 	apiList := GetApiList()

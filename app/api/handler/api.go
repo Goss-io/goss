@@ -43,33 +43,33 @@ func NewApi() *ApiService {
 }
 
 //Start .
-func (this *ApiService) Start() {
-	go this.connMaster()
-	this.httpSrv()
+func (a *ApiService) Start() {
+	go a.connMaster()
+	a.httpSrv()
 }
 
 //httpSrv .
-func (this *ApiService) httpSrv() {
-	http.HandleFunc("/oss/", this.handler)
-	if err := http.ListenAndServe(this.Port, nil); err != nil {
+func (a *ApiService) httpSrv() {
+	http.HandleFunc("/oss/", a.handler)
+	if err := http.ListenAndServe(a.Port, nil); err != nil {
 		log.Panicf("%+v\n", err)
 	}
 }
 
 //handler .
-func (this *ApiService) handler(w http.ResponseWriter, r *http.Request) {
+func (a *ApiService) handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		this.get(w, r)
+		a.get(w, r)
 		return
 	}
 
 	if r.Method == http.MethodPut {
-		this.put(w, r)
+		a.put(w, r)
 		return
 	}
 
 	if r.Method == http.MethodDelete {
-		this.delete(w, r)
+		a.delete(w, r)
 		return
 	}
 
@@ -77,8 +77,8 @@ func (this *ApiService) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 //get.
-func (this *ApiService) get(w http.ResponseWriter, r *http.Request) {
-	name, err := this.getParse(r.URL.EscapedPath())
+func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
+	name, err := a.getParse(r.URL.EscapedPath())
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusNotFound)
@@ -88,25 +88,32 @@ func (this *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	meta := db.Metadata{
 		Name: name,
 	}
-	if err = meta.Query(); err != nil {
-		log.Printf("%+v\n", err)
-		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	b, err := this.Tcp.Read(meta.StoreNode, meta.Hash, meta.Size)
+	list, err := meta.QueryNodeIP()
 	if err != nil {
 		log.Printf("%+v\n", err)
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	w.Write([]byte(b))
+
+	buf := make(chan []byte, meta.Size)
+	for _, nodeip := range list {
+		go func(nodeip, fHash string, bodylen int64) {
+			b, err := a.Tcp.Read(nodeip, fHash, bodylen)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return
+			}
+			buf <- b
+		}(nodeip, meta.Hash, meta.Size)
+	}
+
+	msg := <-buf
+	w.Write(msg)
 }
 
 //getParse get请求解析文件名.
-func (this *ApiService) getParse(url string) (name string, err error) {
+func (a *ApiService) getParse(url string) (name string, err error) {
 	sArr := strings.Split(url, "/")
 	if len(sArr) != 3 {
 		return name, errors.New("not fount")
@@ -119,10 +126,10 @@ func (this *ApiService) getParse(url string) (name string, err error) {
 }
 
 //put.
-func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
+func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	//获取文件名称，文件大小，文件类型，文件hash.
 	//元数据.
-	name, err := this.getParse(r.URL.EscapedPath())
+	name, err := a.getParse(r.URL.EscapedPath())
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusNotFound)
@@ -142,46 +149,31 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 
 	fhash := lib.FileHash(fBody)
 	pkt := packet.New(fBody, []byte(fhash), protocol.SEND_FILE)
-	_, nodeip, err := this.Tcp.Write(pkt)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		w.Write([]byte("fail"))
-		return
-	}
 
-	//记录三条元数据，一条当前这条元数据可用, 其余两条元数据不可用.
-	//选择三个存储节点(节点不能相同).
-	nodeipList := this.Tcp.SelectNode(2, nodeip)
-	//开启事物操作，防止节点数据不一致.
-	tx := db.Db.Begin()
+	//采用用强一致性来记录文件.
+	nodeipList := a.Tcp.SelectNode(3)
 	log.Printf("nodeipList:%+v\n", nodeipList)
 
-	//记录文件元数据.
-	metadata := db.Metadata{
-		Name:      name,
-		Type:      ft,
-		Size:      int64(len(fBody)),
-		Hash:      fhash,
-		StoreNode: nodeip,
-		Usable:    true,
-	}
+	//开启事物操作，防止节点数据不一致.
+	tx := db.Db.Begin()
+	for _, nodeip := range nodeipList {
+		err := a.Tcp.Write(pkt, nodeip)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			w.Write([]byte("fail"))
+			tx.Rollback()
+			//todo 删除已经记录的文件.
+			return
+		}
 
-	if err = tx.Create(&metadata).Error; err != nil {
-		log.Printf("%+v\n", err)
-		w.Write([]byte("fail"))
-		tx.Rollback()
-		return
-	}
-
-	//记录需要异步拉取数据的节点元数据.
-	for _, ip := range nodeipList {
-		metadata = db.Metadata{
+		//记录文件元数据.
+		metadata := db.Metadata{
 			Name:      name,
 			Type:      ft,
 			Size:      int64(len(fBody)),
 			Hash:      fhash,
-			StoreNode: ip,
-			Usable:    false,
+			StoreNode: nodeip,
+			Usable:    true,
 		}
 		if err = tx.Create(&metadata).Error; err != nil {
 			log.Printf("%+v\n", err)
@@ -194,7 +186,6 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	if err := tx.Commit().Error; err != nil {
 		log.Printf("%+v\n", err)
 		w.Write([]byte("fail"))
-		tx.Rollback()
 		return
 	}
 
@@ -202,6 +193,6 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 }
 
 //delete.
-func (this *ApiService) delete(w http.ResponseWriter, r *http.Request) {
+func (a *ApiService) delete(w http.ResponseWriter, r *http.Request) {
 
 }

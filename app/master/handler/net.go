@@ -36,15 +36,15 @@ func NewMaster() *MasterService {
 }
 
 //Start.
-func (this *MasterService) Start() {
+func (m *MasterService) Start() {
 	go NewAdmin()
-	this.listen()
+	m.listen()
 	select {}
 }
 
 //listen .
-func (this *MasterService) listen() {
-	listener, err := net.Listen("tcp4", this.Port)
+func (m *MasterService) listen() {
+	listener, err := net.Listen("tcp4", m.Port)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -59,20 +59,20 @@ func (this *MasterService) listen() {
 
 		//验证授权信息.
 		ip := conn.RemoteAddr().String()
-		if err := this.connInit(conn, ip); err != nil {
+		if err := m.connInit(conn, ip); err != nil {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
 			continue
 		}
 
 		logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到来自:"+ip+"的连接请求")
-		go this.handler(ip, conn)
+		go m.handler(ip, conn)
 	}
 }
 
 //connInit 连接初始化.
-func (this *MasterService) connInit(conn net.Conn, ip string) error {
+func (m *MasterService) connInit(conn net.Conn, ip string) error {
 	//验证授权信息.
-	if err := this.checkAuth(conn, ip); err != nil {
+	if err := m.checkAuth(conn, ip); err != nil {
 		buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
 		conn.Write(buf)
 		return err
@@ -84,7 +84,7 @@ func (this *MasterService) connInit(conn net.Conn, ip string) error {
 	}
 
 	//接收节点信息.
-	if err := this.parseNodeInfo(conn, ip); err != nil {
+	if err := m.parseNodeInfo(conn, ip); err != nil {
 		buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
 		conn.Write(buf)
 		return err
@@ -93,7 +93,7 @@ func (this *MasterService) connInit(conn net.Conn, ip string) error {
 }
 
 //parseNodeInfo .
-func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
+func (m *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 	pkt, err := packet.Parse(conn)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 		}
 
 		GossNode = append(GossNode, node)
-		this.Conn[node.SourceIP] = conn
+		m.Conn[node.SourceIP] = conn
 
 		buf := packet.New([]byte("success"), lib.Hash("success"), protocol.MSG)
 		_, err = conn.Write(buf)
@@ -130,10 +130,10 @@ func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 			apiList := GetApiList()
 			for _, v := range apiList {
 				pkt := packet.New([]byte(node.SourceIP), lib.Hash(node.SourceIP), protocol.ADD_NODE)
-				_, err = this.Conn[v.SourceIP].Write(pkt)
+				_, err = m.Conn[v.SourceIP].Write(pkt)
 				if err != nil {
 					logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+node.SourceIP+"新增storage节点失败，稍后重新通知")
-					RemoveNode(this, ip)
+					RemoveNode(m, ip)
 					return err
 				}
 
@@ -146,10 +146,10 @@ func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 			storageList := GetStorageList()
 			for _, v := range storageList {
 				pktMsg := packet.New([]byte(v.SourceIP), lib.Hash(v.SourceIP), protocol.ADD_NODE)
-				_, err = this.Conn[node.SourceIP].Write(pktMsg)
+				_, err = m.Conn[node.SourceIP].Write(pktMsg)
 				if err != nil {
 					logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+v.SourceIP+"storage节点失败，稍后重新通知")
-					RemoveNode(this, ip)
+					RemoveNode(m, ip)
 					return err
 				}
 
@@ -161,7 +161,7 @@ func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 }
 
 //checkAuth .
-func (this *MasterService) checkAuth(conn net.Conn, ip string) error {
+func (m *MasterService) checkAuth(conn net.Conn, ip string) error {
 	pkt, err := packet.Parse(conn)
 	if err != nil {
 		return err
@@ -177,16 +177,16 @@ func (this *MasterService) checkAuth(conn net.Conn, ip string) error {
 		return errors.New("授权失败")
 	}
 
-	this.Auth[ip] = true
+	m.Auth[ip] = true
 	return nil
 }
 
 //handler .
-func (this *MasterService) handler(ip string, conn net.Conn) {
+func (m *MasterService) handler(ip string, conn net.Conn) {
 	defer conn.Close()
 	for {
 		//验证是否已经授权.
-		if !this.Auth[ip] {
+		if !m.Auth[ip] {
 			conn.Write([]byte("fail"))
 			return
 		}
@@ -195,7 +195,7 @@ func (this *MasterService) handler(ip string, conn net.Conn) {
 		if err != nil && err == io.EOF {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), ip+"断开连接")
 			//从节点列表中移除.
-			RemoveNode(this, ip)
+			RemoveNode(m, ip)
 			return
 		}
 

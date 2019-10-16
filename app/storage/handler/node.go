@@ -15,14 +15,14 @@ import (
 )
 
 //connMaster 连接管理节点.
-func (this *StorageService) connMaster() {
+func (s *StorageService) connMaster() {
 	//上报节点信息
-	conn := this.conn(this.MasterNode)
+	conn := s.conn(s.MasterNode)
 
 	//连接初始化.
-	if err := this.connInit(conn); err != nil {
+	if err := s.connInit(conn); err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
-		this.connMaster()
+		s.connMaster()
 		return
 	}
 
@@ -30,37 +30,37 @@ func (this *StorageService) connMaster() {
 		var buf = make([]byte, 1024)
 		_, err := conn.Read(buf)
 		if err != nil {
-			this.connMaster()
+			s.connMaster()
 			return
 		}
 	}
 }
 
-func (this *StorageService) conn(node string) net.Conn {
+func (s *StorageService) conn(node string) net.Conn {
 	conn, err := net.Dial("tcp4", node)
 	if err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), "master节点连接失败，稍后重新连接")
 		time.Sleep(time.Second * 1)
-		return this.conn(node)
+		return s.conn(node)
 	}
 
 	return conn
 }
 
 //connInit 连接初始化.
-func (this *StorageService) connInit(conn net.Conn) error {
-	if err := this.sendAuth(conn); err != nil {
+func (s *StorageService) connInit(conn net.Conn) error {
+	if err := s.sendAuth(conn); err != nil {
 		return err
 	}
 
-	if err := this.sendNodeInfo(conn); err != nil {
+	if err := s.sendNodeInfo(conn); err != nil {
 		return err
 	}
 	return nil
 }
 
 //auth 发送授权信息.
-func (this *StorageService) sendAuth(conn net.Conn) error {
+func (s *StorageService) sendAuth(conn net.Conn) error {
 	tokenBuf := []byte(ini.GetString("token"))
 	buf := packet.New(tokenBuf, tokenBuf, protocol.CONN_AUTH)
 	_, err := conn.Write(buf)
@@ -81,13 +81,13 @@ func (this *StorageService) sendAuth(conn net.Conn) error {
 }
 
 //sendNodeInfo 上报节点信息.
-func (this *StorageService) sendNodeInfo(conn net.Conn) error {
+func (s *StorageService) sendNodeInfo(conn net.Conn) error {
 	h := hardware.New()
 	nodeInfo := protocol.NodeInfo{
 		Types:    string(packet.NodeTypes_Storage),
 		CpuNum:   h.Cpu.Num,
 		MemSize:  h.Mem.Total,
-		SourceIP: this.Addr,
+		SourceIP: s.Addr,
 		Name:     ini.GetString("node_name"),
 	}
 

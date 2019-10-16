@@ -1,5 +1,9 @@
 package db
 
+import (
+	"github.com/jinzhu/gorm"
+)
+
 //Metadata 元数据.
 type Metadata struct {
 	Model
@@ -22,6 +26,18 @@ func (m *Metadata) Create() error {
 }
 
 //Query.
-func (m *Metadata) Query() error {
-	return Db.Where("name = ?", m.Name).First(&m).Error
+func (m *Metadata) QueryNodeIP() (list []string, err error) {
+	metaList := []Metadata{}
+	err = Db.Where("name = ?", m.Name).Find(&metaList).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return list, err
+	}
+
+	for _, v := range metaList {
+		list = append(list, v.StoreNode)
+		m.Size = v.Size
+		m.Hash = v.Hash
+	}
+
+	return list, nil
 }
