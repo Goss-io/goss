@@ -95,17 +95,21 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	if len(list) < 1 {
+		w.Write([]byte("not found"))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	buf := make(chan []byte, meta.Size)
 	for _, nodeip := range list {
-		go func(nodeip, fHash string, bodylen int64) {
-			b, err := a.Tcp.Read(nodeip, fHash, bodylen)
-			if err != nil {
-				log.Printf("%+v\n", err)
-				return
-			}
-			buf <- b
-		}(nodeip, meta.Hash, meta.Size)
+		b, err := a.Tcp.Read(nodeip, meta.Hash)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			continue
+		}
+		buf <- b
+		break
 	}
 
 	msg := <-buf

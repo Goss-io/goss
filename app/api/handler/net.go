@@ -145,7 +145,7 @@ func (t *TcpService) Write(buf []byte, ip string) error {
 }
 
 //Read tcp读取文件.
-func (t *TcpService) Read(nodeip, fHash string, bodylen int64) (boby []byte, err error) {
+func (t *TcpService) Read(nodeip, fHash string) (boby []byte, err error) {
 	//建立连接.
 	conn, err := net.Dial("tcp4", nodeip)
 	if err != nil {

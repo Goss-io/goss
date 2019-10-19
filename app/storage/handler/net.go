@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/Goss-io/goss/lib/logd"
 
@@ -66,13 +67,13 @@ func (s *StorageService) listen() {
 		conn, err := listener.Accept()
 		if err != nil && err == io.EOF {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), "断开连接")
-			return
+			continue
 		}
 
 		ip := conn.RemoteAddr().String()
 		if err := s.checkAuth(conn, ip); err != nil {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
-			return
+			continue
 		}
 		log.Println("api节点：" + ip + "连接")
 		go s.handler(conn, ip)
@@ -101,7 +102,10 @@ func (s *StorageService) checkAuth(conn net.Conn, ip string) error {
 	if err != nil {
 		return err
 	}
+	mx := sync.RWMutex{}
+	mx.RLock()
 	s.Auth[ip] = true
+	mx.RUnlock()
 	return nil
 }
 
@@ -109,13 +113,19 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 	defer conn.Close()
 	for {
 		//判断是否已经授权.
-		if !s.Auth[ip] {
-			buf := packet.New([]byte("未授权"), lib.Hash("未授权"), protocol.MSG)
-			conn.Write(buf)
-			return
-		}
+		// mx := sync.RWMutex{}
+		// mx.RLock()
+		// _, ok := s.Auth[ip]
+		// mx.RUnlock()
+		// if !ok {
+		// 	log.Println("sAuth[ip]:", s.Auth[ip])
+		// 	buf := packet.New([]byte("未授权"), lib.Hash("未授权"), protocol.MSG)
+		// 	conn.Write(buf)
+		// 	return
+		// }
 		pkt, err := packet.Parse(conn)
-		if err != nil && err == io.EOF {
+		if err != nil {
+			log.Printf("err:%+v\n", err)
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), ip+"断开连接")
 			return
 		}
@@ -135,6 +145,7 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 			fPath := conf.Conf.Node.StorageRoot + fHash
 			err = ioutil.WriteFile(fPath, pkt.Body, 0777)
 			if err != nil {
+				log.Printf("err:%+v\n", err)
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "创建文件失败"+err.Error())
 				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
 				conn.Write(buf)
@@ -149,6 +160,7 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 			fpath := conf.Conf.Node.StorageRoot + pkt.Hash
 			b, err := ioutil.ReadFile(fpath)
 			if err != nil {
+				log.Printf("err:%+v\n", err)
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "读取文件失败:"+err.Error())
 				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
 				conn.Write(buf)
@@ -165,7 +177,8 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 
 			buf := packet.New(b, []byte(pkt.Hash), protocol.SEND_FILE)
 			_, err = conn.Write(buf)
-			if err != nil && err == io.EOF {
+			if err != nil {
+				log.Printf("err:%+v\n", err)
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "文件发送失败:"+err.Error())
 				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
 				conn.Write(buf)
