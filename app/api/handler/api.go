@@ -50,7 +50,7 @@ func (a *ApiService) Start() {
 
 //httpSrv .
 func (a *ApiService) httpSrv() {
-	http.HandleFunc("/oss/", a.handler)
+	http.HandleFunc("/", a.handler)
 	if err := http.ListenAndServe(a.Port, nil); err != nil {
 		log.Panicf("%+v\n", err)
 	}
@@ -78,6 +78,23 @@ func (a *ApiService) handler(w http.ResponseWriter, r *http.Request) {
 
 //get.
 func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
+	//验证bucket是否存在.
+	bkt := db.Bucket{
+		Host: r.Host,
+	}
+	if err := bkt.Query(); err != nil {
+		log.Printf("err:%+v\n", err)
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if bkt.ID < 1 {
+		w.Write([]byte("不存在"))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	//获取访问的文件.
 	name, err := a.getParse(r.URL.EscapedPath())
 	if err != nil {
 		w.Write([]byte(err.Error()))
@@ -86,7 +103,8 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meta := db.Metadata{
-		Name: name,
+		Name:     name,
+		BucketID: bkt.ID,
 	}
 	list, err := meta.QueryNodeIP()
 	if err != nil {
@@ -102,9 +120,11 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	buf := make(chan []byte, meta.Size)
+	var errnum = 0
 	for _, nodeip := range list {
 		b, err := a.Tcp.Read(nodeip, meta.Hash)
 		if err != nil {
+			errnum += 1
 			log.Printf("%+v\n", err)
 			continue
 		}
@@ -113,24 +133,35 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := <-buf
-	w.Write(msg)
+	//如果msg为空的话，则判断是否errnum > 0.
+	if len(msg) > 0 {
+		w.Write(msg)
+		return
+	}
+	if errnum > 0 {
+		w.Write([]byte("获取失败"))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte("not found"))
+	w.WriteHeader(http.StatusNotFound)
 }
 
 //getParse get请求解析文件名.
+//兼容目录结构，host以后的路径都为文件名.
 func (a *ApiService) getParse(url string) (name string, err error) {
-	sArr := strings.Split(url, "/")
-	if len(sArr) != 3 {
-		return name, errors.New("not fount")
-	}
-	if sArr[2] == "" {
+	path := strings.TrimLeft(url, "/")
+	if len(path) < 1 {
 		return name, errors.New("not fount")
 	}
 
-	return sArr[2], nil
+	return path, nil
 }
 
 //put.
 func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
+	//获取访问域名.
+	log.Println(r.RequestURI)
 	//获取文件名称，文件大小，文件类型，文件hash.
 	//元数据.
 	name, err := a.getParse(r.URL.EscapedPath())

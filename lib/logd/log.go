@@ -24,7 +24,6 @@ const (
 var logList = make(chan string, 4096)
 
 func init() {
-	log.Println("init")
 	go func() {
 		for {
 			select {

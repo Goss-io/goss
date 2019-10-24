@@ -13,6 +13,7 @@ type Metadata struct {
 	Hash      string `gorm:"index"`
 	StoreNode string
 	Usable    bool `gorm:"index"` //节点是否可用.
+	BucketID  int  `gorm:"index"`
 }
 
 //TableName .
@@ -28,7 +29,7 @@ func (m *Metadata) Create() error {
 //Query.
 func (m *Metadata) QueryNodeIP() (list []string, err error) {
 	metaList := []Metadata{}
-	err = Db.Where("name = ?", m.Name).Find(&metaList).Error
+	err = Db.Where("name = ? and bucket_id = ?", m.Name, m.BucketID).Find(&metaList).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return list, err
 	}
