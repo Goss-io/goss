@@ -122,7 +122,7 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	buf := make(chan []byte, meta.Size)
 	var errnum = 0
 	for _, nodeip := range list {
-		b, err := a.Tcp.Read(nodeip, meta.Hash)
+		b, err := a.Tcp.Read(nodeip, meta.StorePath)
 		if err != nil {
 			errnum += 1
 			log.Printf("%+v\n", err)
@@ -215,7 +215,7 @@ func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	//开启事物操作，防止节点数据不一致.
 	tx := db.Db.Begin()
 	for _, nodeip := range nodeipList {
-		err := a.Tcp.Write(pkt, nodeip)
+		storePath, err := a.Tcp.Write(pkt, nodeip)
 		if err != nil {
 			log.Printf("%+v\n", err)
 			w.Write([]byte("fail"))
@@ -231,6 +231,7 @@ func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
 			Size:      int64(len(fBody)),
 			Hash:      fhash,
 			StoreNode: nodeip,
+			StorePath: storePath,
 			Usable:    true,
 			BucketID:  bkt.ID,
 		}

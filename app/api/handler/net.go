@@ -123,29 +123,29 @@ func (t *TcpService) SelectNode(nodenum int, excludeipList ...string) []string {
 }
 
 //Write tcp 发送消息.
-func (t *TcpService) Write(buf []byte, ip string) error {
+func (t *TcpService) Write(buf []byte, ip string) (storePath string, err error) {
 	conn := t.conn[ip]
-	_, err := conn.Write(buf)
+	_, err = conn.Write(buf)
 	if err != nil {
-		return err
+		return storePath, err
 	}
 
 	log.Println("发送成功")
 	pkt, err := packet.Parse(conn)
 	if err != nil {
-		return err
+		return storePath, err
 	}
 
 	log.Printf("pkt:%+v\n", pkt)
 	if string(pkt.Body) == "fail" {
-		return errors.New("失败")
+		return storePath, errors.New("失败")
 	}
 
-	return nil
+	return string(pkt.Body), err
 }
 
 //Read tcp读取文件.
-func (t *TcpService) Read(nodeip, fHash string) (boby []byte, err error) {
+func (t *TcpService) Read(nodeip, fPath string) (boby []byte, err error) {
 	//建立连接.
 	conn, err := net.Dial("tcp4", nodeip)
 	if err != nil {
@@ -172,7 +172,7 @@ func (t *TcpService) Read(nodeip, fHash string) (boby []byte, err error) {
 	}
 
 	//读取文件.
-	buf = packet.New(nil, []byte(fHash), protocol.READ_FILE)
+	buf = packet.New([]byte(fPath), []byte(fPath), protocol.READ_FILE)
 	_, err = conn.Write(buf)
 	if err != nil {
 		log.Printf("%+v\n", err)

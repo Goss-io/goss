@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"os"
 	"sync"
 
 	"github.com/Goss-io/goss/lib/logd"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/Goss-io/goss/app/storage/conf"
 	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/dir"
 	"github.com/Goss-io/goss/lib/packet"
 )
 
@@ -47,11 +47,9 @@ func (s *StorageService) Start() {
 
 //checkStoragePath 检查存储路径.
 func (s *StorageService) checkStoragePath() {
-	if !lib.IsExists(conf.Conf.Node.StorageRoot) {
-		//创建存储文件夹.
-		if err := os.Mkdir(conf.Conf.Node.StorageRoot, 0777); err != nil {
-			log.Panicf("%+v\n", err)
-		}
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), "初始化存储路径")
+	if err := dir.InitStoragePath(conf.Conf.Node.StorageRoot); err != nil {
+		panic(err)
 	}
 }
 
@@ -142,7 +140,8 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 				return
 			}
 
-			fPath := conf.Conf.Node.StorageRoot + fHash
+			fPath := dir.SwitchPath(fHash) + fHash
+			log.Println("fPath:", fPath)
 			err = ioutil.WriteFile(fPath, pkt.Body, 0777)
 			if err != nil {
 				log.Printf("err:%+v\n", err)
@@ -151,13 +150,13 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 				conn.Write(buf)
 				return
 			}
-			buf := packet.New([]byte(fHash), lib.Hash(fHash), protocol.MSG)
+			buf := packet.New([]byte(fPath), lib.Hash(fHash), protocol.MSG)
 			conn.Write(buf)
 		}
 
 		if pkt.Protocol == protocol.READ_FILE {
 			//读取文件.
-			fpath := conf.Conf.Node.StorageRoot + pkt.Hash
+			fpath := string(pkt.Body)
 			b, err := ioutil.ReadFile(fpath)
 			if err != nil {
 				log.Printf("err:%+v\n", err)
@@ -168,12 +167,12 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 			}
 
 			//验证文件是否损坏.
-			if lib.FileHash(b) != pkt.Hash {
-				logd.Make(logd.Level_WARNING, logd.GetLogpath(), pkt.Hash+"文件已损坏")
-				buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
-				conn.Write(buf)
-				return
-			}
+			// if lib.FileHash(b) != pkt.Hash {
+			// 	logd.Make(logd.Level_WARNING, logd.GetLogpath(), pkt.Hash+"文件已损坏")
+			// 	buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
+			// 	conn.Write(buf)
+			// 	return
+			// }
 
 			buf := packet.New(b, []byte(pkt.Hash), protocol.SEND_FILE)
 			_, err = conn.Write(buf)

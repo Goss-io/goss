@@ -12,6 +12,7 @@ type Metadata struct {
 	Size      int64
 	Hash      string `gorm:"index"`
 	StoreNode string
+	StorePath string
 	Usable    bool `gorm:"index"` //节点是否可用.
 	BucketID  int  `gorm:"index"`
 }
@@ -38,6 +39,7 @@ func (m *Metadata) QueryNodeIP() (list []string, err error) {
 		list = append(list, v.StoreNode)
 		m.Size = v.Size
 		m.Hash = v.Hash
+		m.StorePath = v.StorePath
 	}
 
 	return list, nil
