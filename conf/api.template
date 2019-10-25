@@ -1,9 +1,9 @@
 #数据库配置
 db_host = 127.0.0.1
-db_user = postgres
+db_user = root
 db_name = goss
 db_pwd = 123
-db_port = 5432
+db_port = 3306
 
 #节点配置
 node_name=api_node_1

@@ -21,7 +21,7 @@ func main() {
 }
 
 func upload() {
-	filename := "./1.gif"
+	filename := "./2.png"
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -29,14 +29,14 @@ func upload() {
 	}
 
 	client := http.Client{}
-	fname := fmt.Sprintf("http://127.0.0.1/oss/%s", "1.gif")
+	fname := fmt.Sprintf("http://blog.houzhongjian.com/game/tianlong/2019-10-25/%s", "2.png")
 	req, err := http.NewRequest("PUT", fname, bytes.NewBuffer(b))
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return
 	}
-	req.Header.Add("AccessKey", "")
-	req.Header.Add("SecretKey", "")
+	req.Header.Add("AccessKey", "202cb962ac59075b964b07152d234b70")
+	req.Header.Add("SecretKey", "202cb962ac59075b964b07152d234b70")
 	_, err = client.Do(req)
 	if err != nil {
 		log.Printf("%+v\n", err)

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/Goss-io/goss/lib/ini"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
 )
 
 //Db .
@@ -38,16 +38,16 @@ func Connection() error {
 
 //conndb .
 func conndb(cf DbConfig) error {
-	args := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cf.Host,
-		cf.Port,
+	args := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=true",
 		cf.User,
 		cf.Password,
+		cf.Host,
+		cf.Port,
 		cf.Name,
 	)
 
 	log.Println("args:", args)
-	db, err := gorm.Open("postgres", args)
+	db, err := gorm.Open("mysql", args)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return err

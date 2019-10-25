@@ -160,8 +160,31 @@ func (a *ApiService) getParse(url string) (name string, err error) {
 
 //put.
 func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
-	//获取访问域名.
-	log.Println(r.RequestURI)
+	//验证bucket是否存在.
+	bkt := db.Bucket{
+		Host: r.Host,
+	}
+	if err := bkt.Query(); err != nil {
+		log.Printf("err:%+v\n", err)
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if bkt.ID < 1 {
+		w.Write([]byte("不存在"))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	//验证AccessKey和SecretKey是否正确.
+	ak := r.Header.Get("AccessKey")
+	sk := r.Header.Get("SecretKey")
+	if len(ak) != 32 || len(sk) != 32 || bkt.AccessKey != ak || bkt.SecretKey != sk {
+		w.Write([]byte("授权失败"))
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	//获取文件名称，文件大小，文件类型，文件hash.
 	//元数据.
 	name, err := a.getParse(r.URL.EscapedPath())
@@ -209,6 +232,7 @@ func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
 			Hash:      fhash,
 			StoreNode: nodeip,
 			Usable:    true,
+			BucketID:  bkt.ID,
 		}
 		if err = tx.Create(&metadata).Error; err != nil {
 			log.Printf("%+v\n", err)
