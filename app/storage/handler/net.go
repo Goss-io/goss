@@ -17,7 +17,6 @@ import (
 
 	"github.com/Goss-io/goss/app/storage/conf"
 	"github.com/Goss-io/goss/lib"
-	"github.com/Goss-io/goss/lib/dir"
 	"github.com/Goss-io/goss/lib/packet"
 )
 
@@ -48,7 +47,7 @@ func (s *StorageService) Start() {
 //checkStoragePath 检查存储路径.
 func (s *StorageService) checkStoragePath() {
 	logd.Make(logd.Level_INFO, logd.GetLogpath(), "初始化存储路径")
-	if err := dir.InitStoragePath(conf.Conf.Node.StorageRoot); err != nil {
+	if err := s.InitStoragePath(conf.Conf.Node.StorageRoot); err != nil {
 		panic(err)
 	}
 }
@@ -140,9 +139,11 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 				return
 			}
 
-			fPath := dir.SwitchPath(fHash) + fHash
+			fPath := s.SelectPath(fHash) + fHash
 			log.Println("fPath:", fPath)
-			err = ioutil.WriteFile(fPath, pkt.Body, 0777)
+			storePath := conf.Conf.Node.StorageRoot + fPath
+			log.Println("storePath:", storePath)
+			err = ioutil.WriteFile(storePath, pkt.Body, 0777)
 			if err != nil {
 				log.Printf("err:%+v\n", err)
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "创建文件失败"+err.Error())
@@ -156,7 +157,7 @@ func (s *StorageService) handler(conn net.Conn, ip string) {
 
 		if pkt.Protocol == protocol.READ_FILE {
 			//读取文件.
-			fpath := string(pkt.Body)
+			fpath := conf.Conf.Node.StorageRoot + string(pkt.Body)
 			b, err := ioutil.ReadFile(fpath)
 			if err != nil {
 				log.Printf("err:%+v\n", err)

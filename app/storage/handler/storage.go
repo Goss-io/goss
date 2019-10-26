@@ -1,4 +1,4 @@
-package dir
+package handler
 
 import (
 	"fmt"
@@ -7,25 +7,29 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/Goss-io/goss/app/storage/conf"
+
+	"github.com/Goss-io/goss/lib"
 )
 
 var storageList []string
 
-//SwitchPath 选择存储路径.
-func SwitchPath(hash string) string {
+//SelectPath 选择存储路径.
+func (s *StorageService) SelectPath(hash string) string {
 	n := crc32.ChecksumIEEE([]byte(hash))
 	num := int64(n) % int64(len(storageList))
 	return storageList[num]
 }
 
-func InitStoragePath(path string) error {
+func (s *StorageService) InitStoragePath(path string) error {
 	//判断路径是否存在.
-	if !isExists(path) {
+	if !lib.IsExists(path) {
 		if err := os.MkdirAll(path, 0777); err != nil {
 			return err
 		}
 	}
-	if _, err := makeDir(path); err != nil {
+	if _, err := s.makeDir(path); err != nil {
 		log.Printf("%+v\n", err)
 		return err
 	}
@@ -40,7 +44,7 @@ func InitStoragePath(path string) error {
 		if f.IsDir() {
 			//创建文件夹.
 			path := fmt.Sprintf("%s%s/", path, f.Name())
-			dirList, err := makeDir(path)
+			dirList, err := s.makeDir(path)
 			if err != nil {
 				log.Printf("%+v\n", err)
 				return err
@@ -53,7 +57,8 @@ func InitStoragePath(path string) error {
 	return nil
 }
 
-func makeDir(path string) (dirList []string, err error) {
+//makeDir 创建存储目录.
+func (s *StorageService) makeDir(path string) (dirList []string, err error) {
 	str := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	sarr := strings.Split(str, "")
 	var num = 0
@@ -63,8 +68,9 @@ func makeDir(path string) (dirList []string, err error) {
 				break
 			}
 			dirname := fmt.Sprintf("%s%s%s/", path, v, val)
-			if isExists(dirname) {
+			if lib.IsExists(dirname) {
 				num++
+				dirname = strings.Replace(dirname, conf.Conf.Node.StorageRoot, "", -1)
 				dirList = append(dirList, dirname)
 				continue
 			}
@@ -73,18 +79,10 @@ func makeDir(path string) (dirList []string, err error) {
 				return dirList, err
 			}
 
+			dirname = strings.Replace(dirname, conf.Conf.Node.StorageRoot, "", -1)
 			dirList = append(dirList, dirname)
 			num++
 		}
 	}
 	return dirList, nil
-}
-
-//isExists
-func isExists(path string) bool {
-	_, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return true
 }
