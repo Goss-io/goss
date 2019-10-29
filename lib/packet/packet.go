@@ -34,7 +34,6 @@ func New(content, fileHash []byte, num protocol.GossProtocol) []byte {
 
 //Parse 解析网络数据包.
 func Parse(conn net.Conn) (pkt Packet, err error) {
-	pkt = Packet{}
 	//获取协议号.
 	var num = make([]byte, PROROCOL_LEN)
 	_, err = io.ReadFull(conn, num)

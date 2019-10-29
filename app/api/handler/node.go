@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
+	"math/rand"
 	"net"
 	"time"
 
@@ -34,28 +34,29 @@ func (a *ApiService) connMaster() {
 			a.connMaster()
 			return
 		}
-		log.Printf("pkt:%+v\n", pkt)
-		log.Printf("pkt.body:%+v\n", string(pkt.Body))
 
 		//判断协议类型.
 		if pkt.Protocol == protocol.ADD_NODE {
 			ip := string(pkt.Body)
-			log.Println("ip:", ip)
 			//新增节点.
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "新增存储节点:"+ip)
-			a.Tcp.Start(ip)
+			a.Storage = append(a.Storage, ip)
 		}
 
 		if pkt.Protocol == protocol.REMOVE_NODE {
 			ip := string(pkt.Body)
-			log.Println("ip:", ip)
 			//删除节点.
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到master节点要求与:"+ip+"节点断开的消息")
-			if err := a.Tcp.conn[ip].Close(); err != nil {
-				logd.Make(logd.Level_INFO, logd.GetLogpath(), "断开与:"+ip+"节点的连接失败")
-				return
-			}
+			a.RemoveStorageNode(ip)
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "断开成功")
+		}
+	}
+}
+
+func (a *ApiService) RemoveStorageNode(nodeip string) {
+	for index, v := range a.Storage {
+		if v == nodeip {
+			a.Storage = append(a.Storage[:index], a.Storage[index+1:]...)
 		}
 	}
 }
@@ -142,4 +143,28 @@ func (a *ApiService) sendNodeInfo(conn net.Conn) error {
 
 	logd.Make(logd.Level_INFO, logd.GetLogpath(), "上报节点信息成功")
 	return nil
+}
+
+func (a *ApiService) SelectNode(nodenum int) []string {
+	rand.Seed(time.Now().UnixNano())
+	list := []string{}
+	for _, v := range a.Storage {
+		list = append(list, v)
+	}
+
+	nodeipList := []string{}
+	num := 0
+	for {
+		if num >= nodenum {
+			break
+		}
+		index := rand.Int() % len(list)
+		addr := list[index]
+
+		if !lib.InArray(addr, nodeipList) {
+			num++
+			nodeipList = append(nodeipList, addr)
+		}
+	}
+	return nodeipList
 }

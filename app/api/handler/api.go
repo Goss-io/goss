@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,11 +13,9 @@ import (
 
 	"github.com/Goss-io/goss/db"
 	"github.com/Goss-io/goss/lib/filetype"
-	"github.com/Goss-io/goss/lib/protocol"
 
 	"github.com/Goss-io/goss/app/api/conf"
 	"github.com/Goss-io/goss/lib"
-	"github.com/Goss-io/goss/lib/packet"
 )
 
 //ApiService.
@@ -25,6 +24,7 @@ type ApiService struct {
 	Tcp        *TcpService
 	Addr       string
 	MasterNode string
+	Storage    []string
 	// Backups chan
 }
 
@@ -122,7 +122,7 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	buf := make(chan []byte, meta.Size)
 	var errnum = 0
 	for _, nodeip := range list {
-		b, err := a.Tcp.Read(nodeip, meta.StorePath)
+		b, err := a.Read(meta.StorePath, nodeip)
 		if err != nil {
 			errnum += 1
 			log.Printf("%+v\n", err)
@@ -205,17 +205,17 @@ func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	f16 := fmt.Sprintf("%x", fBody)
 	ft := filetype.Parse(f16[:10])
 
+	//计算文件hash.
 	fhash := lib.FileHash(fBody)
-	pkt := packet.New(fBody, []byte(fhash), protocol.SEND_FILE)
 
 	//采用用强一致性来记录文件.
-	nodeipList := a.Tcp.SelectNode(3)
+	nodeipList := a.SelectNode(3)
 	log.Printf("nodeipList:%+v\n", nodeipList)
 
 	//开启事物操作，防止节点数据不一致.
 	tx := db.Db.Begin()
 	for _, nodeip := range nodeipList {
-		storePath, err := a.Tcp.Write(pkt, nodeip)
+		storePath, err := a.Write(fhash, fBody, nodeip)
 		if err != nil {
 			log.Printf("%+v\n", err)
 			w.Write([]byte("fail"))
@@ -255,4 +255,65 @@ func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
 //delete.
 func (a *ApiService) delete(w http.ResponseWriter, r *http.Request) {
 
+}
+
+//Write 发送消息.
+func (a *ApiService) Write(fhash string, body []byte, nodeip string) (storePath string, err error) {
+	url := fmt.Sprintf("http://%s/", nodeip)
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
+	if err != nil {
+		log.Printf("err:%+v\n", err)
+		return storePath, err
+	}
+	req.Header.Set("token", conf.Conf.Node.Token)
+	req.Header.Set("fhash", fhash)
+	client := http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		log.Printf("err:%+v\n", err)
+		return storePath, err
+	}
+
+	b, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("err:%+v\n", err)
+		return storePath, err
+	}
+
+	resp := lib.ParseMsg(b)
+	if !resp.Status {
+		return storePath, errors.New(resp.Msg.(string))
+	}
+
+	return resp.Msg.(string), nil
+}
+
+//Read 读取消息.
+func (a *ApiService) Read(fpath, nodeip string) (fbody []byte, err error) {
+	url := fmt.Sprintf("http://%s/", nodeip)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Printf("err:%+v\n", err)
+		return fbody, err
+	}
+	req.Header.Set("fpath", fpath)
+	req.Header.Set("token", conf.Conf.Node.Token)
+	client := http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		log.Printf("err:%+v\n", err)
+		return fbody, nil
+	}
+
+	b, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("err:%+v\n", err)
+		return fbody, nil
+	}
+
+	resp := lib.ParseMsg(b)
+	if !resp.Status {
+		return fbody, errors.New(resp.Msg.(string))
+	}
+	return resp.Body, nil
 }

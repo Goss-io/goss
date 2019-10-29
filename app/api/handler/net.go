@@ -146,45 +146,62 @@ func (t *TcpService) Write(buf []byte, ip string) (storePath string, err error) 
 
 //Read tcp读取文件.
 func (t *TcpService) Read(nodeip, fPath string) (boby []byte, err error) {
-	//建立连接.
-	conn, err := net.Dial("tcp4", nodeip)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return boby, err
-	}
+	// 建立连接.
+	// conn, err := net.Dial("tcp4", nodeip)
+	// if err != nil {
+	// 	log.Printf("%+v\n", err)
+	// 	return boby, err
+	// }
 
-	//连接授权.
-	token := ini.GetString("token")
-	buf := packet.New([]byte(token), lib.Hash(token), protocol.CONN_AUTH)
+	// //连接授权.
+	// token := ini.GetString("token")
+	// buf := packet.New([]byte(token), lib.Hash(token), protocol.CONN_AUTH)
+	// _, err = conn.Write(buf)
+	// log.Println("nodeip:", nodeip)
+	// var conn net.Conn
+	// for k, v := range t.conn {
+	// 	if k == "127.0.0.1:9001" {
+	// 		conn = v
+	// 	}
+	// }
+	conn := t.conn["127.0.0.1:9001"]
+	// log.Println(conn)
+	// log.Println("conn")
+	// conn := t.conn["127.0.0.1:9001"]
+	// if err != nil {
+	// 	log.Printf("%+v\n", err)
+	// 	return boby, err
+	// }
+	// log.Printf("conn:%+v\n", conn)
+	// pkt, err := packet.Parse(conn)
+	// if err != nil {
+	// 	log.Printf("%+v\n", err)
+	// 	return boby, err
+	// }
+	// log.Printf("pkt:%+v\n", pkt)
+
+	// if string(pkt.Body) == "fail" {
+	// 	return nil, errors.New("文件获取失败")
+	// }
+
+	//读取文件.
+	// log.Println("fPath:", fPath)
+	buf := packet.New([]byte(fPath), lib.Hash(fPath), protocol.READ_FILE)
 	_, err = conn.Write(buf)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return boby, err
 	}
+
+	// log.Printf("buf:%+v\n", string(buf))
+	// log.Println("write")
+
 	pkt, err := packet.Parse(conn)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return boby, err
 	}
 
-	if string(pkt.Body) == "fail" {
-		return nil, errors.New("文件获取失败")
-	}
-
-	//读取文件.
-	buf = packet.New([]byte(fPath), []byte(fPath), protocol.READ_FILE)
-	_, err = conn.Write(buf)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return boby, err
-	}
-
-	pkt, err = packet.Parse(conn)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return boby, err
-	}
-
-	conn.Close()
+	// log.Println("over")
 	return pkt.Body, nil
 }
