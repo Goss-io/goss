@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -17,6 +18,13 @@ func (s *StorageService) httpSrv() {
 		//检查token.
 		if !s.checkAuth(r.Header.Get("token")) {
 			//todo 未授权的访问.
+			response := &Response{Status: StatusError, Msg: "未授权的访问", Content: nil}
+			responseEncode, err := json.Marshal(response)
+			w.Header().Set("Content-Type", "application/json")
+			if err != nil {
+				responseEncode = []byte(`{"status":1,"msg":"Internal server error."}`)
+			}
+			w.Write(responseEncode)
 			return
 		}
 		if r.Method == "PUT" {

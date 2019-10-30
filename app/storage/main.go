@@ -3,9 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/Goss-io/goss/app/storage/handler"
-
 	"github.com/Goss-io/goss/app/storage/conf"
+	"github.com/Goss-io/goss/app/storage/handler"
 	"github.com/Goss-io/goss/lib/cmd"
 )
 

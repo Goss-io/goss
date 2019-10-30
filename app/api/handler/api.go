@@ -10,31 +10,33 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Goss-io/goss/lib/ini"
-
-	"github.com/Goss-io/goss/db"
-	"github.com/Goss-io/goss/lib/filetype"
-
 	"github.com/Goss-io/goss/app/api/conf"
+	"github.com/Goss-io/goss/db"
 	"github.com/Goss-io/goss/lib"
+	"github.com/Goss-io/goss/lib/filetype"
+	"github.com/Goss-io/goss/lib/ini"
 )
 
-//ApiService.
-type ApiService struct {
+//APIService Api服务信息.
+type APIService struct {
+	//Port 端口.
 	Port string
 	// Tcp        *TcpService
-	Addr       string
+	//Addr 地址.
+	Addr string
+	//MasterNode 主节点.
 	MasterNode string
-	Storage    []string
+	//Storage .
+	Storage []string
 	// Backups chan
 }
 
 // type Backups
 
-//NewApi .
-func NewApi() *ApiService {
+//NewAPI .
+func NewAPI() *APIService {
 	cf := conf.Conf.Node
-	apiSrv := ApiService{
+	apiSrv := APIService{
 		Port: fmt.Sprintf(":%d", cf.Port),
 		// Tcp:        NewTcpService(),
 		Addr:       fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
@@ -44,13 +46,13 @@ func NewApi() *ApiService {
 }
 
 //Start .
-func (a *ApiService) Start() {
+func (a *APIService) Start() {
 	go a.connMaster()
 	a.httpSrv()
 }
 
 //httpSrv .
-func (a *ApiService) httpSrv() {
+func (a *APIService) httpSrv() {
 	http.HandleFunc("/", a.handler)
 	if err := http.ListenAndServe(a.Port, nil); err != nil {
 		log.Panicf("%+v\n", err)
@@ -58,7 +60,7 @@ func (a *ApiService) httpSrv() {
 }
 
 //handler .
-func (a *ApiService) handler(w http.ResponseWriter, r *http.Request) {
+func (a *APIService) handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		a.get(w, r)
 		return
@@ -78,7 +80,7 @@ func (a *ApiService) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 //get.
-func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
+func (a *APIService) get(w http.ResponseWriter, r *http.Request) {
 	//验证bucket是否存在.
 	bkt := db.Bucket{
 		Host: r.Host,
@@ -120,7 +122,7 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	for _, nodeip := range list {
 		b, err := a.Read(meta.StorePath, nodeip)
 		if err != nil {
-			errnum += 1
+			errnum++
 			log.Printf("%+v\n", err)
 			continue
 		}
@@ -147,7 +149,7 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 
 //getParse get请求解析文件名.
 //兼容目录结构，host以后的路径都为文件名.
-func (a *ApiService) getParse(url string) (name string, err error) {
+func (a *APIService) getParse(url string) (name string, err error) {
 	path := strings.TrimLeft(url, "/")
 	if len(path) < 1 {
 		return name, errors.New("not fount")
@@ -157,7 +159,7 @@ func (a *ApiService) getParse(url string) (name string, err error) {
 }
 
 //put.
-func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
+func (a *APIService) put(w http.ResponseWriter, r *http.Request) {
 	//验证bucket是否存在.
 	bkt := db.Bucket{
 		Host: r.Host,
@@ -251,12 +253,12 @@ func (a *ApiService) put(w http.ResponseWriter, r *http.Request) {
 }
 
 //delete.
-func (a *ApiService) delete(w http.ResponseWriter, r *http.Request) {
+func (a *APIService) delete(w http.ResponseWriter, r *http.Request) {
 
 }
 
 //Write 发送消息.
-func (a *ApiService) Write(fhash string, body []byte, nodeip string) (storePath string, err error) {
+func (a *APIService) Write(fhash string, body []byte, nodeip string) (storePath string, err error) {
 	url := fmt.Sprintf("http://%s/", nodeip)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
 	if err != nil {
@@ -287,7 +289,7 @@ func (a *ApiService) Write(fhash string, body []byte, nodeip string) (storePath 
 }
 
 //Read 读取消息.
-func (a *ApiService) Read(fpath, nodeip string) (fbody []byte, err error) {
+func (a *APIService) Read(fpath, nodeip string) (fbody []byte, err error) {
 	url := fmt.Sprintf("http://%s/", nodeip)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

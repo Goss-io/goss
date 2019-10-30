@@ -17,7 +17,7 @@ import (
 )
 
 //connMaster .
-func (a *ApiService) connMaster() {
+func (a *APIService) connMaster() {
 	conn := a.conn(a.MasterNode)
 	//连接初始化
 	if err := a.connInit(conn); err != nil {
@@ -53,7 +53,7 @@ func (a *ApiService) connMaster() {
 	}
 }
 
-func (a *ApiService) RemoveStorageNode(nodeip string) {
+func (a *APIService) RemoveStorageNode(nodeip string) {
 	for index, v := range a.Storage {
 		if v == nodeip {
 			a.Storage = append(a.Storage[:index], a.Storage[index+1:]...)
@@ -62,7 +62,7 @@ func (a *ApiService) RemoveStorageNode(nodeip string) {
 }
 
 //conn .
-func (a *ApiService) conn(node string) net.Conn {
+func (a *APIService) conn(node string) net.Conn {
 	conn, err := net.Dial("tcp4", node)
 	if err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), "master节点连接失败，稍后重新连接")
@@ -74,7 +74,7 @@ func (a *ApiService) conn(node string) net.Conn {
 }
 
 //connInit 连接初始化.
-func (a *ApiService) connInit(conn net.Conn) error {
+func (a *APIService) connInit(conn net.Conn) error {
 	//向主节点发送授权信息.
 	if err := a.sendAuth(conn); err != nil {
 		return err
@@ -88,7 +88,7 @@ func (a *ApiService) connInit(conn net.Conn) error {
 }
 
 //auth 发送授权信息.
-func (a *ApiService) sendAuth(conn net.Conn) error {
+func (a *APIService) sendAuth(conn net.Conn) error {
 	tokenBuf := []byte(ini.GetString("token"))
 	buf := packet.New(tokenBuf, tokenBuf, protocol.CONN_AUTH)
 	_, err := conn.Write(buf)
@@ -110,7 +110,7 @@ func (a *ApiService) sendAuth(conn net.Conn) error {
 }
 
 //sendNodeInfo 上报节点信息.
-func (a *ApiService) sendNodeInfo(conn net.Conn) error {
+func (a *APIService) sendNodeInfo(conn net.Conn) error {
 	h := hardware.New()
 	nodeInfo := protocol.NodeInfo{
 		Types:    string(packet.NodeTypes_Api),
@@ -145,7 +145,7 @@ func (a *ApiService) sendNodeInfo(conn net.Conn) error {
 	return nil
 }
 
-func (a *ApiService) SelectNode(nodenum int) []string {
+func (a *APIService) SelectNode(nodenum int) []string {
 	rand.Seed(time.Now().UnixNano())
 	list := []string{}
 	for _, v := range a.Storage {

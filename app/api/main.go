@@ -21,6 +21,6 @@ func main() {
 		log.Panicln(err)
 	}
 
-	apiSrv := handler.NewApi()
+	apiSrv := handler.NewAPI()
 	apiSrv.Start()
 }

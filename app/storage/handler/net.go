@@ -3,19 +3,12 @@ package handler
 import (
 	"fmt"
 
-	"github.com/Goss-io/goss/lib/logd"
-
-	"github.com/Goss-io/goss/lib/ini"
-
 	"github.com/Goss-io/goss/app/storage/conf"
+	"github.com/Goss-io/goss/lib/ini"
+	"github.com/Goss-io/goss/lib/logd"
 )
 
-type StorageService struct {
-	Port       string
-	Addr       string
-	MasterNode string
-}
-
+//NewStorageService 初始化存储服务.
 func NewStorageService() *StorageService {
 	s := &StorageService{
 		Port:       fmt.Sprintf(":%d", conf.Conf.Node.Port),

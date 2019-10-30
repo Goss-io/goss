@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/Goss-io/goss/app/storage/conf"
-
 	"github.com/Goss-io/goss/lib"
 )
 
@@ -22,6 +21,7 @@ func (s *StorageService) SelectPath(hash string) string {
 	return storageList[num]
 }
 
+//InitStoragePath 初始化存储目录.
 func (s *StorageService) InitStoragePath(path string) error {
 	//判断路径是否存在.
 	if !lib.IsExists(path) {
@@ -67,9 +67,9 @@ func (s *StorageService) makeDir(path string) (dirList []string, err error) {
 			if num > 255 {
 				break
 			}
+			num++
 			dirname := fmt.Sprintf("%s%s%s/", path, v, val)
 			if lib.IsExists(dirname) {
-				num++
 				dirname = strings.Replace(dirname, conf.Conf.Node.StorageRoot, "", -1)
 				dirList = append(dirList, dirname)
 				continue
@@ -81,7 +81,6 @@ func (s *StorageService) makeDir(path string) (dirList []string, err error) {
 
 			dirname = strings.Replace(dirname, conf.Conf.Node.StorageRoot, "", -1)
 			dirList = append(dirList, dirname)
-			num++
 		}
 	}
 	return dirList, nil

@@ -105,8 +105,8 @@ func parseBaseConfig() *baseConfig {
 		log.Println("log_path 不能为空")
 		os.Exit(0)
 	}
-	base := baseConfig{
+	base := &baseConfig{
 		LogPath: logpath,
 	}
-	return &base
+	return base
 }
