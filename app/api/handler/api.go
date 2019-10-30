@@ -17,28 +17,11 @@ import (
 	"github.com/Goss-io/goss/lib/ini"
 )
 
-//APIService Api服务信息.
-type APIService struct {
-	//Port 端口.
-	Port string
-	// Tcp        *TcpService
-	//Addr 地址.
-	Addr string
-	//MasterNode 主节点.
-	MasterNode string
-	//Storage .
-	Storage []string
-	// Backups chan
-}
-
-// type Backups
-
 //NewAPI .
 func NewAPI() *APIService {
 	cf := conf.Conf.Node
 	apiSrv := APIService{
-		Port: fmt.Sprintf(":%d", cf.Port),
-		// Tcp:        NewTcpService(),
+		Port:       fmt.Sprintf(":%d", cf.Port),
 		Addr:       fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
 		MasterNode: ini.GetString("master_node"),
 	}

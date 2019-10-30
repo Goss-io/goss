@@ -20,7 +20,7 @@ import (
 func (a *APIService) connMaster() {
 	conn := a.conn(a.MasterNode)
 	//连接初始化
-	if err := a.connInit(conn); err != nil {
+	if err := a.conninit(conn); err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
 		time.Sleep(time.Second * 1)
 		a.connMaster()
@@ -74,7 +74,7 @@ func (a *APIService) conn(node string) net.Conn {
 }
 
 //connInit 连接初始化.
-func (a *APIService) connInit(conn net.Conn) error {
+func (a *APIService) conninit(conn net.Conn) error {
 	//向主节点发送授权信息.
 	if err := a.sendAuth(conn); err != nil {
 		return err

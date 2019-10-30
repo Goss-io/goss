@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -17,14 +16,7 @@ func (s *StorageService) httpSrv() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		//检查token.
 		if !s.checkAuth(r.Header.Get("token")) {
-			//todo 未授权的访问.
-			response := &Response{Status: StatusError, Msg: "未授权的访问", Content: nil}
-			responseEncode, err := json.Marshal(response)
-			w.Header().Set("Content-Type", "application/json")
-			if err != nil {
-				responseEncode = []byte(`{"status":1,"msg":"Internal server error."}`)
-			}
-			w.Write(responseEncode)
+			lib.Response(w, false, "未授权的访问")
 			return
 		}
 		if r.Method == "PUT" {
@@ -89,7 +81,6 @@ func (s *StorageService) put(hash string, fbody []byte) (fPath string, err error
 
 	fPath = s.SelectPath(fHash) + fHash
 	storePath := conf.Conf.Node.StorageRoot + fPath
-	log.Println("storePath:", storePath)
 	err = ioutil.WriteFile(storePath, fbody, 0777)
 	if err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), "创建文件失败"+err.Error())
