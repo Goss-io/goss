@@ -70,7 +70,9 @@ func Response(w http.ResponseWriter, status bool, msg interface{}, body ...[]byt
 	dist := map[string]interface{}{
 		"status": status,
 		"msg":    msg,
-		"body":   body[0],
+	}
+	if len(body) > 0 {
+		dist["body"] = body[0]
 	}
 	b, err := json.Marshal(dist)
 	if err != nil {

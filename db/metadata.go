@@ -40,6 +40,7 @@ func (m *Metadata) QueryNodeIP() (list []string, err error) {
 		m.Size = v.Size
 		m.Hash = v.Hash
 		m.StorePath = v.StorePath
+		m.Type = v.Type
 	}
 
 	return list, nil

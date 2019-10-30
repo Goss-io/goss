@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Goss-io/goss/lib/ini"
 
@@ -20,8 +21,8 @@ import (
 
 //ApiService.
 type ApiService struct {
-	Port       string
-	Tcp        *TcpService
+	Port string
+	// Tcp        *TcpService
 	Addr       string
 	MasterNode string
 	Storage    []string
@@ -34,8 +35,8 @@ type ApiService struct {
 func NewApi() *ApiService {
 	cf := conf.Conf.Node
 	apiSrv := ApiService{
-		Port:       fmt.Sprintf(":%d", cf.Port),
-		Tcp:        NewTcpService(),
+		Port: fmt.Sprintf(":%d", cf.Port),
+		// Tcp:        NewTcpService(),
 		Addr:       fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
 		MasterNode: ini.GetString("master_node"),
 	}
@@ -85,12 +86,10 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	if err := bkt.Query(); err != nil {
 		log.Printf("err:%+v\n", err)
 		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	if bkt.ID < 1 {
 		w.Write([]byte("不存在"))
-		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -98,7 +97,6 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	name, err := a.getParse(r.URL.EscapedPath())
 	if err != nil {
 		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -110,12 +108,10 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%+v\n", err)
 		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	if len(list) < 1 {
 		w.Write([]byte("not found"))
-		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -135,16 +131,18 @@ func (a *ApiService) get(w http.ResponseWriter, r *http.Request) {
 	msg := <-buf
 	//如果msg为空的话，则判断是否errnum > 0.
 	if len(msg) > 0 {
-		w.Write(msg)
+		w.Header().Set("Content-Type", meta.Type)
+		_, err = w.Write(msg)
+		if err != nil {
+			log.Printf("err:%+v\n", err)
+		}
 		return
 	}
 	if errnum > 0 {
 		w.Write([]byte("获取失败"))
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Write([]byte("not found"))
-	w.WriteHeader(http.StatusNotFound)
 }
 
 //getParse get请求解析文件名.
@@ -298,7 +296,9 @@ func (a *ApiService) Read(fpath, nodeip string) (fbody []byte, err error) {
 	}
 	req.Header.Set("fpath", fpath)
 	req.Header.Set("token", conf.Conf.Node.Token)
-	client := http.Client{}
+	client := http.Client{
+		Timeout: time.Second * 1,
+	}
 	response, err := client.Do(req)
 	if err != nil {
 		log.Printf("err:%+v\n", err)

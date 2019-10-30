@@ -26,6 +26,7 @@ func (s *StorageService) httpSrv() {
 				log.Printf("%+v\n", err)
 				return
 			}
+			log.Printf("r.Body:%+v\n", string(fbody))
 
 			fhash := r.Header.Get("fhash")
 			fPath, err := s.put(fhash, fbody)
