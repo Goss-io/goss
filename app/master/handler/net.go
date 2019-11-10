@@ -38,6 +38,7 @@ func NewMaster() *MasterService {
 //Start.
 func (m *MasterService) Start() {
 	go NewAdmin()
+	go NewMetadata()
 	m.listen()
 	select {}
 }

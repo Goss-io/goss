@@ -16,11 +16,13 @@ type Config struct {
 }
 
 type nodeConfig struct {
-	IP      string
-	Port    int
-	WebPort int
-	Name    string
-	Token   string
+	IP           string
+	Port         int
+	WebPort      int
+	Name         string
+	Token        string
+	MetadataPath string
+	MetadataPort int
 }
 
 type baseConfig struct {
@@ -79,13 +81,25 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		log.Println("token 不能为空")
 		os.Exit(0)
 	}
+	metadataPath := ini.GetString("metadata_path")
+	if len(metadataPath) < 1 {
+		log.Println("metadata_path 不能为空")
+		os.Exit(0)
+	}
+	metadataPort := ini.GetInt("metadata_port")
+	if metadataPort < 1 {
+		log.Println("metadata_port 不能为空")
+		os.Exit(0)
+	}
 
 	nodeconf := &nodeConfig{
-		IP:      storeip,
-		Port:    storeport,
-		WebPort: webport,
-		Name:    name,
-		Token:   token,
+		IP:           storeip,
+		Port:         storeport,
+		WebPort:      webport,
+		Name:         name,
+		Token:        token,
+		MetadataPath: metadataPath,
+		MetadataPort: metadataPort,
 	}
 
 	return nodeconf
