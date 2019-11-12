@@ -29,7 +29,7 @@ func upload() {
 	}
 
 	client := http.Client{}
-	fname := fmt.Sprintf("http://blog.houzhongjian.com/%s", "index.html")
+	fname := fmt.Sprintf("http://blog.houzhongjian.com/%s", "2019/11/10/index.html")
 	req, err := http.NewRequest("PUT", fname, bytes.NewBuffer(b))
 	if err != nil {
 		log.Printf("%+v\n", err)

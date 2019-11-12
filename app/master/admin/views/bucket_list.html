@@ -1,0 +1,33 @@
+{{template "header" .}}
+        <div class="container-fluid" style="margin-top:51px;">
+            <h2>存储桶列表 <a href="/admin/bucketadd" class="btn btn-xs btn-warning">创建</a></h2>
+            <div class="row">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>存储桶名称</th>
+                            <th>存储桶域名</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{$len := len .bucketList}}
+                        {{if eq $len 0}}
+                        <tr>
+                            <td colspan="3" align="center">暂无数据</td>
+                        </tr>
+                        {{else}}
+                        {{range .bucketList}}
+                        <tr>
+                            <td>{{.Name}}</td>
+                            <td>{{.Host}}</td>
+                            <td>{{.CreateTime}}</td>
+                        </tr>
+                        {{end}}
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+            </div>
+        </div>
+{{template "footer" .}}

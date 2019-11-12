@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -64,7 +65,7 @@ func (m *MetadataService) MetadataGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := r.FormValue("key")
-	buf, err := ossdb.Read(m.DB, key)
+	buf, err := ossdb.Read(m.DB, "", key)
 	if err != nil {
 		logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
 		return
@@ -83,7 +84,7 @@ func (m *MetadataService) MetadataSet(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("key")
 	val := r.FormValue("value")
 
-	if err := ossdb.Insert(m.DB, key, val); err != nil {
+	if err := ossdb.Insert(m.DB, "", key, val); err != nil {
 		logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
 		w.Write([]byte("fail"))
 		return
@@ -94,7 +95,25 @@ func (m *MetadataService) MetadataSet(w http.ResponseWriter, r *http.Request) {
 
 //BucketList  .
 func (m *MetadataService) BucketList(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+	if token != conf.Conf.Node.Token {
+		w.Write([]byte("fail"))
+		return
+	}
+	bktlist, err := ossdb.BucketList(m.DB)
+	if err != nil {
+		logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
+		w.Write([]byte("fail"))
+		return
+	}
 
+	b, err := json.Marshal(bktlist)
+	if err != nil {
+		logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
+		w.Write([]byte("fail"))
+		return
+	}
+	w.Write(b)
 }
 
 //BucketSet  .

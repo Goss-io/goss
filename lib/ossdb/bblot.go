@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/Goss-io/goss/lib"
 	"github.com/Goss-io/goss/lib/logd"
@@ -16,7 +15,7 @@ import (
 type BucketInfo struct {
 	Name       string
 	Host       string
-	CreateTime time.Time
+	CreateTime string
 }
 
 func NewDB(path string) (db *bbolt.DB, err error) {
@@ -47,17 +46,21 @@ func Read(db *bbolt.DB, bktname string, key string) (buf []byte, err error) {
 func CreateBucket(db *bbolt.DB, bktinfo BucketInfo) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		//判断当前bucket是否存在.
-		list, err := BucketList(db)
+		bktlist, err := BucketList(db)
 		if err != nil {
 			logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
 			return err
+		}
+		list := []string{}
+		for _, v := range bktlist {
+			list = append(list, v.Name)
 		}
 
 		if lib.InArray(bktinfo.Name, list) {
 			return errors.New("当前bucket已经存在")
 		}
 
-		//创建bucket并且记录bucket信息.
+		//创建bucket
 		bkt, err := tx.CreateBucket([]byte(bktinfo.Name))
 		if err != nil {
 			logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
@@ -65,6 +68,13 @@ func CreateBucket(db *bbolt.DB, bktinfo BucketInfo) error {
 		}
 
 		b, err := json.Marshal(bktinfo)
+		if err != nil {
+			logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
+			return err
+		}
+
+		//记录当前bucket的信息.
+		bkt, err = tx.CreateBucketIfNotExists([]byte("goss_bucket_info"))
 		if err != nil {
 			logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
 			return err
@@ -80,16 +90,27 @@ func CreateBucket(db *bbolt.DB, bktinfo BucketInfo) error {
 }
 
 //BucketList .
-func BucketList(db *bbolt.DB) (list []string, err error) {
+func BucketList(db *bbolt.DB) (list []BucketInfo, err error) {
 	err = db.View(func(tx *bbolt.Tx) error {
+		bkt := tx.Bucket([]byte("goss_bucket_info"))
+
 		return tx.ForEach(func(name []byte, b *bbolt.Bucket) error {
-			list = append(list, string(name))
+			bktinfo := BucketInfo{}
+			by := bkt.Get(name)
+			if err := json.Unmarshal(by, &bktinfo); err != nil {
+				logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
+				return err
+			}
+			bktinfo.Name = string(name)
+
+			list = append(list, bktinfo)
 			return nil
 		})
 	})
 	if err != nil {
 		return list, err
 	}
+
 	return list, nil
 }
 
