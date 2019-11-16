@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/Goss-io/goss/lib/logd"
@@ -118,7 +119,18 @@ func (m *MetadataService) BucketList(w http.ResponseWriter, r *http.Request) {
 
 //BucketSet  .
 func (m *MetadataService) BucketSet(w http.ResponseWriter, r *http.Request) {
+	bkt := ossdb.BucketInfo{
+		Name:       r.Header.Get("name"),
+		Host:       r.Header.Get("bucket_host"),
+		CreateTime: r.Header.Get("create_time"),
+	}
 
+	log.Printf("bk:%+v\n", bkt)
+	if err := ossdb.CreateBucket(m.DB, bkt); err != nil {
+		w.Write([]byte("fail"))
+		return
+	}
+	w.Write([]byte("success"))
 }
 
 //BucketGet  .

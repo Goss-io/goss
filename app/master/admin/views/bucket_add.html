@@ -1,0 +1,36 @@
+{{template "header" .}}
+        <div class="container" style="margin-top:51px;">
+            <h2>创建存储桶 <a href="/admin/bucket" class="btn btn-xs btn-warning">返回</a></h2>
+            <div class="row">
+                <form>
+                    <div class="form-group">
+                      <label for="bucket">存储桶名称</label>
+                      <input type="text" class="form-control" id="bucket" placeholder="存储桶名称">
+                    </div>
+                    <button type="button" class="btn btn-default add">确定</button>
+                  </form>
+            </div>
+            </div>
+        </div>
+        <script>
+            $(function(){
+                $(".add").click(function(){
+                    var name = $("#bucket").val();
+                    if (name == "") {
+                        layer.msg("名称不能为空");
+                        return false;
+                    }
+
+                    $.post("/admin/bucket/add",{"name":name},function(res){
+                        // console.log(res)
+                        layer.msg(res.msg)
+                        if (res.status) {
+                            setTimeout(function(){
+                                window.location.href="/admin/bucket"
+                            },1500)
+                        }
+                    },'json')
+                })
+            })
+        </script>
+{{template "footer" .}}

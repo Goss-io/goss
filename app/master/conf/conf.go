@@ -23,6 +23,7 @@ type nodeConfig struct {
 	Token        string
 	MetadataPath string
 	MetadataPort int
+	BucketDomain string
 }
 
 type baseConfig struct {
@@ -92,6 +93,12 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		os.Exit(0)
 	}
 
+	bucketDomain := ini.GetString("bucket_domain")
+	if len(bucketDomain) < 1 {
+		log.Println("bucket_domain 不能为空")
+		os.Exit(0)
+	}
+
 	nodeconf := &nodeConfig{
 		IP:           storeip,
 		Port:         storeport,
@@ -100,6 +107,7 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		Token:        token,
 		MetadataPath: metadataPath,
 		MetadataPort: metadataPort,
+		BucketDomain: bucketDomain,
 	}
 
 	return nodeconf

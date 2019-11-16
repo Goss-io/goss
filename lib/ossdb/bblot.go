@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/Goss-io/goss/lib"
 	"github.com/Goss-io/goss/lib/logd"
@@ -13,13 +14,28 @@ import (
 
 //BucketInfo.
 type BucketInfo struct {
-	Name       string
-	Host       string
-	CreateTime string
+	Name       string `form:"name" json:"name"`
+	Host       string `form:"host" json:"host"`
+	CreateTime string `form:"create_time" json:"create_time"`
 }
 
 func NewDB(path string) (db *bbolt.DB, err error) {
-	db, err = bbolt.Open(fmt.Sprintf("%s", "goss.db"), 0777, nil)
+	path = fmt.Sprintf("%sgoss.db", path)
+	log.Println("path:", path)
+	db, err = bbolt.Open(path, 0777, nil)
+	if err != nil {
+		logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
+		return db, err
+	}
+
+	err = db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte("goss_bucket_info"))
+		if err != nil {
+			logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
 		return db, err
@@ -85,6 +101,7 @@ func CreateBucket(db *bbolt.DB, bktinfo BucketInfo) error {
 			return err
 		}
 
+		log.Println("put bktinfo:", string(b))
 		return nil
 	})
 }
@@ -93,16 +110,12 @@ func CreateBucket(db *bbolt.DB, bktinfo BucketInfo) error {
 func BucketList(db *bbolt.DB) (list []BucketInfo, err error) {
 	err = db.View(func(tx *bbolt.Tx) error {
 		bkt := tx.Bucket([]byte("goss_bucket_info"))
-
-		return tx.ForEach(func(name []byte, b *bbolt.Bucket) error {
+		return bkt.ForEach(func(name []byte, val []byte) error {
 			bktinfo := BucketInfo{}
-			by := bkt.Get(name)
-			if err := json.Unmarshal(by, &bktinfo); err != nil {
+			if err := json.Unmarshal(val, &bktinfo); err != nil {
 				logd.Make(logd.Level_ERROR, logd.GetLogpath(), err.Error())
 				return err
 			}
-			bktinfo.Name = string(name)
-
 			list = append(list, bktinfo)
 			return nil
 		})
